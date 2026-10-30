@@ -1,7 +1,7 @@
 #!/bin/bash
-# Build open-gpu-kernel-modules + giải nén userspace cho eGPU trên Jetson Orin Nano (JetPack 7.2.1).
-# Chạy bằng user thường TRÊN Jetson, không cần sudo. Ra ~/egpu/, sau đó: sudo bash 20-install-dgpu.sh
-# Có Internet (4G) thì tự tải; không thì chép sẵn 2 file vào ~/egpu (tải trên máy khác rồi scp sang).
+# Build open-gpu-kernel-modules + extract the userspace for an eGPU on Jetson Orin Nano (JetPack 7.2.1).
+# Run as a normal user ON the Jetson, no sudo. Output goes to ~/egpu/, then: sudo bash 20-install-dgpu.sh
+# Downloads automatically if online; otherwise put the 2 files in ~/egpu first (download elsewhere and scp them over).
 set -euo pipefail
 V=595.99.02
 W=$HOME/egpu
@@ -20,10 +20,10 @@ echo "$SHA_TGZ  $TGZ" | sha256sum -c -
 [ -d "open-gpu-kernel-modules-$V" ] || tar xzf "$TGZ"
 [ -d "dgpu-$V" ] || sh "$RUN" --extract-only --target "dgpu-$V" >/dev/null
 
-# ~6 nhân Orin Nano: ~6 phút
+# 6-core Orin Nano: ~6 min
 make -C "open-gpu-kernel-modules-$V" modules -j"$(nproc)" SYSSRC="/lib/modules/$(uname -r)/build"
 modinfo -F vermagic "open-gpu-kernel-modules-$V/kernel-open/nvidia.ko"
 
-# 20-install-dgpu.sh đọc gpu-mode từ ~/egpu
+# 20-install-dgpu.sh reads gpu-mode from ~/egpu
 cp "$HERE/gpu-mode" "$HERE/egpu_bench.cu" "$W/"
-echo "Xong. Tiếp: sudo bash $HERE/20-install-dgpu.sh && sudo reboot"
+echo "Done. Next: sudo bash $HERE/20-install-dgpu.sh && sudo reboot"

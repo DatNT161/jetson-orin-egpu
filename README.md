@@ -181,8 +181,6 @@ usage: [cmp90/README.md](cmp90/README.md).
 | `trt_conv_bench.py` | Build a pure-TensorRT conv benchmark engine |
 | `cmp90/` | CMP 90HX unlock patches (untested) |
 
-Script comments and messages are in Vietnamese.
-
 ## License
 
 MIT (see `LICENSE`). `cmp90/patches/0014` and `0015` come from cmpunlocker (MIT,

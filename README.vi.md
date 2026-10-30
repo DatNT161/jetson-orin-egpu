@@ -107,7 +107,7 @@ nvcc -O2 -gencode arch=compute_87,code=sm_87 -gencode arch=compute_86,code=sm_86
      -gencode arch=compute_75,code=sm_75 shm_share.cu -o shm_share
 dgpu ./shm_share consume 6000 &
 LD_PRELOAD=$PWD/libhideuvm.so ./shm_share produce 6000
-# [consume] 6000 khung trong 5.98s = 1003 khung/s, 3.12 GB/s · khung sai 0, byte sai 0
+# [consume] 6000 frames in 5.98s = 1003 frames/s, 3.12 GB/s · bad frames 0, bad bytes 0
 ```
 
 Khung NV12 1080p, vòng 4 ô, chép đồng bộ: 3,12 GB/s là sát trần PCIe Gen3 x4 (3,29 GB/s), tức không tốn bản sao nào

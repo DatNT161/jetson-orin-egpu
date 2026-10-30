@@ -8,7 +8,7 @@
 -    {
 -        flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
 -    }
-+    /* 595.99.02 port: không có confComputeForceUnprotAlloc; bản gốc 595 luôn bật cờ này (_kgspCreateSignatureMemdesc). */
++    /* 595.99.02 port: no confComputeForceUnprotAlloc; stock 595 always sets this flag (_kgspCreateSignatureMemdesc). */
 +    flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
  
      NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,

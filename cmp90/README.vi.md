@@ -37,7 +37,7 @@ sudo ~/egpu/cmp90/cmp90-mode cmp90 && sudo reboot  # khi đã cắm 90HX
 journalctl -k -b | grep -E 'CMP90|NVRM'            # kiểm
 gpu-mode dgpu && dgpu nvidia-smi
 sudo ~/egpu/cmp90/cmp90-mode stock && sudo reboot  # quay về bản gốc
-~/egpu/cmp90/cmp90-mode                            # in: chọn: … · đang nạp: …
+~/egpu/cmp90/cmp90-mode                            # in: selected: … · loaded: …
 ```
 
 `cmp90-mode` chép module vá sang `/lib/modules/$KVER/updates/dgpu-cmp90` và đổi dòng `override` trong

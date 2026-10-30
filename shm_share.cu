@@ -1,11 +1,11 @@
-// Chia khung ảnh giữa hai tiến trình: GPU Orin ghi (producer), card rời đọc (consumer), qua POSIX shared memory.
-// Cả hai phía cudaHostRegister cùng vùng shm: Orin ghi thẳng bằng kernel (bộ nhớ chung), card rời DMA qua PCIe.
-// Vòng SLOTS ô, mỗi ô có cặp đếm written/read để hai bên chờ nhau. Consumer kiểm từng khung trên GPU.
+// Share frames between two processes over POSIX shared memory: the Orin GPU writes (producer), the discrete card reads (consumer).
+// Both sides cudaHostRegister the same shm region: the Orin writes it directly from a kernel (shared memory), the card DMAs over PCIe.
+// Ring of SLOTS slots, each with written/read counters so the two sides wait for each other. The consumer verifies every frame on the GPU.
 //
 //   nvcc -O2 -gencode arch=compute_87,code=sm_87 -gencode arch=compute_86,code=sm_86 \
 //        -gencode arch=compute_75,code=sm_75 shm_share.cu -o shm_share
 //   gpu-mode dgpu
-//   dgpu ./shm_share consume 600 &                                   # card rời
+//   dgpu ./shm_share consume 600 &                                   # discrete card
 //   LD_PRELOAD=$PWD/libhideuvm.so ./shm_share produce 600            # GPU Orin
 #include <cuda_runtime.h>
 #include <fcntl.h>
@@ -44,7 +44,7 @@ static void wait_until(volatile unsigned long long* v, unsigned long long want) 
 }
 
 int main(int argc, char** argv) {
-    if (argc < 3) { fprintf(stderr, "dùng: %s produce|consume <số khung>\n", argv[0]); return 2; }
+    if (argc < 3) { fprintf(stderr, "usage: %s produce|consume <frames>\n", argv[0]); return 2; }
     bool prod = !strcmp(argv[1], "produce");
     unsigned n = atoi(argv[2]);
     size_t total = HDR + SLOTS * FRAME;
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
         CK(cudaHostGetDevicePointer((void**)&d, slots, 0));
         for (unsigned f = 0; f < n; f++) {
             int s = f % SLOTS;
-            wait_until(&h->read[s], h->written[s]);          // ô đã được đọc xong
+            wait_until(&h->read[s], h->written[s]);          // slot has been consumed
             fill<<<64, 256>>>(d + s * FRAME, FRAME, f);
             CK(cudaDeviceSynchronize());
             __sync_synchronize();
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
             h->read[s] = f + 1;
         }
         double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-        printf("[consume] %u khung trong %.2fs = %.0f khung/s, %.2f GB/s · khung sai %u, byte sai %llu\n",
+        printf("[consume] %u frames in %.2fs = %.0f frames/s, %.2f GB/s · bad frames %u, bad bytes %llu\n",
                n, s, n / s, n * FRAME / s / 1e9, bad_frames, bad_h);
         shm_unlink(NAME);
         return bad_h != 0;

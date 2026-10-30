@@ -1,8 +1,8 @@
 #!/bin/bash
-# Gỡ driver dGPU tự build, trả Jetson về stack display/iGPU gốc của L4T.
+# Remove the self-built dGPU driver and return the Jetson to the stock L4T display/iGPU stack.
 set -euo pipefail
 V=595.99.02
-[ "$(id -u)" = 0 ] || { echo "Chạy bằng sudo"; exit 1; }
+[ "$(id -u)" = 0 ] || { echo "Run with sudo"; exit 1; }
 rm -f /etc/nvidia-display-depmod-conf /etc/nvidia-display-modprobe-conf
 rm -rf /etc/nvidia-dgpu "/lib/modules/$(uname -r)/updates/dgpu" "/opt/nvidia/dgpu-$V" "/lib/firmware/nvidia/$V"
 systemctl disable gpu-mode-boot.service 2>/dev/null || true

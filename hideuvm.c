@@ -1,4 +1,4 @@
-// LD_PRELOAD cho tiến trình dùng GPU Orin khi driver card rời đang nạp: giấu nvidia_uvm để libcuda nvgpu không đi nhầm đường uvm.
+// LD_PRELOAD for processes using the Orin GPU while the discrete-card driver is loaded: hide nvidia_uvm so the nvgpu libcuda does not take the uvm path.
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <errno.h>

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Dựng một mạng conv thuần bằng API TensorRT (không cần onnx/torch), build engine, ghi ra file.
+"""Build a plain conv network with the TensorRT API (no onnx/torch needed), build the engine, write it to a file.
 
-Dùng để kiểm TensorRT của JetPack chạy được trên GPU nào: chạy dưới `dgpu` thì build cho 2080 Ti
-(sm_75), chạy thường thì build cho iGPU Orin (sm_87). Đo tốc độ bằng trtexec --loadEngine.
+Used to check which GPU the JetPack TensorRT runs on: under `dgpu` it builds for the discrete card
+(e.g. sm_75/sm_86), otherwise for the Orin iGPU (sm_87). Measure speed with trtexec --loadEngine.
 
     dgpu python3 trt_conv_bench.py conv-2080ti.engine --fp16
     dgpu /usr/src/tensorrt/bin/trtexec --loadEngine=conv-2080ti.engine
@@ -19,7 +19,7 @@ def build(path, fp16, batch, size, layers, ch):
     net = builder.create_network(0)
     x = net.add_input("x", trt.float32, (batch, 3, size, size))
     rng = np.random.default_rng(0)
-    keep = []  # trọng số numpy phải sống tới khi build xong
+    keep = []  # numpy weights must stay alive until the build finishes
     c_in = 3
     for i in range(layers):
         w = rng.standard_normal((ch, c_in, 3, 3), dtype=np.float32) * 0.05
@@ -27,7 +27,7 @@ def build(path, fp16, batch, size, layers, ch):
         keep += [w, b]
         conv = net.add_convolution_nd(x, ch, (3, 3), trt.Weights(w), trt.Weights(b))
         conv.padding_nd = (1, 1)
-        if i % 4 == 3:  # giảm kích thước như backbone
+        if i % 4 == 3:  # downsample like a backbone
             conv.stride_nd = (2, 2)
         x = net.add_activation(conv.get_output(0), trt.ActivationType.RELU).get_output(0)
         c_in = ch
@@ -39,14 +39,14 @@ def build(path, fp16, batch, size, layers, ch):
         cfg.set_flag(trt.BuilderFlag.FP16)
     plan = builder.build_serialized_network(net, cfg)
     if plan is None:
-        raise SystemExit("build engine thất bại")
+        raise SystemExit("engine build failed")
     with open(path, "wb") as f:
         f.write(plan)
     gflop = sum(
         2 * ch * (3 if i == 0 else ch) * 9 * (size >> ((i) // 4)) ** 2 / (4 if i % 4 == 3 else 1)
         for i in range(layers)
     ) * batch / 1e9
-    print(f"engine {path}: {plan.nbytes / 1e6:.1f} MB, ~{gflop:.0f} GFLOP/lần chạy")
+    print(f"engine {path}: {plan.nbytes / 1e6:.1f} MB, ~{gflop:.0f} GFLOP/run")
 
 
 if __name__ == "__main__":

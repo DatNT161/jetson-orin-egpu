@@ -1,4 +1,4 @@
-// Kiểm tra nhanh eGPU: thông tin thiết bị, băng thông H2D/D2H (pinned), SGEMM/HGEMM cuBLAS.
+// Quick eGPU check: device info, H2D/D2H (pinned) bandwidth, cuBLAS SGEMM/HGEMM.
 #include <cstdio>
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
@@ -37,7 +37,7 @@ int main() {
     for (int i = 0; i < 5; i++) cublasSgemm(cb, CUBLAS_OP_N, CUBLAS_OP_N, N, N, N, &al, A, N, Bm, N, &be, C, N);
     cudaEventRecord(b); cudaEventSynchronize(b); cudaEventElapsedTime(&ms, a, b);
     printf("SGEMM %d: %.1f TFLOPS\n", N, 5 * 2.0 * N * N * N / (ms * 1e9));
-    // FP16 vào, tích luỹ FP32 (Tensor Core)
+    // FP16 inputs, FP32 accumulate (Tensor Cores)
     cublasGemmEx(cb, CUBLAS_OP_N, CUBLAS_OP_N, N, N, N, &al, A, CUDA_R_16F, N, Bm, CUDA_R_16F, N, &be, C, CUDA_R_16F, N,
                  CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT);
     cudaEventRecord(a);

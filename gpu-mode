@@ -1,19 +1,19 @@
 #!/bin/bash
-# Chuyển chế độ CUDA trên Jetson có eGPU.
-#   igpu: gỡ nvidia_uvm  -> CUDA iGPU (libcuda nvgpu) chạy; eGPU KHÔNG chạy CUDA được.
-#   dgpu: nạp nvidia_uvm -> CUDA eGPU chạy qua `dgpu <lệnh>`; CUDA iGPU hỏng (libcuda nvgpu
-#         thấy /sys/module/nvidia_uvm thì dùng uvm bản upstream, không hiểu nvgpu).
-#         Bật persistence mode: không có thì mỗi tiến trình CUDA mới mất ~20 s khởi động lại GPU (GSP firmware).
-# Không có tham số: in chế độ hiện tại.
+# Switch the CUDA mode on a Jetson with an eGPU.
+#   igpu: unload nvidia_uvm -> iGPU CUDA (nvgpu libcuda) works; the eGPU can NOT run CUDA.
+#   dgpu: load nvidia_uvm   -> eGPU CUDA works via `dgpu <command>`; iGPU CUDA breaks (the nvgpu libcuda
+#         sees /sys/module/nvidia_uvm and uses the upstream uvm, which does not understand nvgpu).
+#         Enables persistence mode: without it every new CUDA process waits ~20 s for GPU (GSP firmware) init.
+# No argument: print the current mode.
 set -euo pipefail
 SMI=/opt/nvidia/dgpu-595.99.02/bin/nvidia-smi
 cur() { [ -d /sys/module/nvidia_uvm ] && echo dgpu || echo igpu; }
 case "${1:-}" in
     "") cur; exit 0 ;;
     igpu|dgpu) ;;
-    *) echo "Dùng: gpu-mode [igpu|dgpu]" >&2; exit 2 ;;
+    *) echo "Usage: gpu-mode [igpu|dgpu]" >&2; exit 2 ;;
 esac
-# Gọi đúng đường dẫn thật để khớp luật NOPASSWD (30-sudoers-gpu-mode.sh), kể cả khi chạy qua symlink.
+# Call the real path so the NOPASSWD rule (30-sudoers-gpu-mode.sh) matches, even when run through a symlink.
 [ "$(id -u)" = 0 ] || exec sudo /usr/local/sbin/gpu-mode "$@"
 if [ "$1" = dgpu ]; then
     modprobe nvidia_uvm
@@ -22,7 +22,7 @@ if [ "$1" = dgpu ]; then
 else
     LD_LIBRARY_PATH=/opt/nvidia/dgpu-595.99.02/lib "$SMI" -pm 0 >/dev/null 2>&1 || true
     if ! modprobe -r nvidia_uvm; then
-        echo "nvidia_uvm đang bận — còn tiến trình CUDA trên eGPU:" >&2
+        echo "nvidia_uvm is busy — CUDA processes still on the eGPU:" >&2
         fuser -v /dev/nvidia-uvm 2>&1 | sed 's/^/  /' >&2 || true
         exit 1
     fi

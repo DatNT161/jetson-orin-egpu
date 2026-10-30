@@ -1,5 +1,5 @@
-// LD_PRELOAD: báo DeepStream là GPU rời (driver RM) để nó cấp bộ đệm CUDA thay vì NVMM/EGL của iGPU.
-// Mặc định chỉ đổi cho thư viện dưới ~/ds/root; RMSHIM_ALL=1 đổi cho mọi nơi gọi (cả libnvbufsurftransform).
+// LD_PRELOAD: tell DeepStream the GPU is discrete (RM driver) so it allocates CUDA buffers instead of iGPU NVMM/EGL.
+// By default only for callers under ~/ds/root; RMSHIM_ALL=1 applies to every caller (including libnvbufsurftransform).
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <stdlib.h>

@@ -20,5 +20,5 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Thư mục cmp90/patches/ (0014, 0015) lấy từ cmpunlocker — giữ license riêng ở cmp90/patches/LICENSE.cmpunlocker.
-Các bản vá áp lên NVIDIA open-gpu-kernel-modules (MIT/GPLv2).
+cmp90/patches/0014 and 0015 come from cmpunlocker and keep their own license in cmp90/patches/LICENSE.cmpunlocker.
+The patches apply to NVIDIA open-gpu-kernel-modules (MIT/GPLv2).
