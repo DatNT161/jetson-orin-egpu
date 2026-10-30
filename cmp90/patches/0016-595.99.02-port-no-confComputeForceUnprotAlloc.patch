@@ -1,0 +1,15 @@
+--- a/src/nvidia/src/kernel/gpu/gsp/kernel_gsp.c
++++ b/src/nvidia/src/kernel/gpu/gsp/kernel_gsp.c
+@@ -5802,10 +5802,8 @@
+         s_cmp90PcV67SignatureMemdescByGpu[cmp90GpuSlot] == NULL,
+         NV_ERR_INVALID_STATE);
+ 
+-    if (confComputeForceUnprotAlloc(pGpu))
+-    {
+-        flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
+-    }
++    /* 595.99.02 port: không có confComputeForceUnprotAlloc; bản gốc 595 luôn bật cờ này (_kgspCreateSignatureMemdesc). */
++    flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
+ 
+     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+         memdescCreate(&pNewSignatureMemdesc, pGpu,

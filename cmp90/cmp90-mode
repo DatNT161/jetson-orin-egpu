@@ -1,0 +1,47 @@
+#!/bin/bash
+# Đổi module driver eGPU giữa bản gốc và bản vá mở khoá CMP 90HX (cmpunlocker v0.1.28 rejoin15,
+# port từ 610.43.03 sang 595.99.02 — CHƯA thử trên card thật).
+#   stock: /lib/modules/$KVER/updates/dgpu        (open-gpu-kernel-modules 595.99.02 gốc)
+#   cmp90: /lib/modules/$KVER/updates/dgpu-cmp90  (cùng bản, vá 0014+0015)
+# Chỉ đổi dòng override trong /etc/nvidia-dgpu/depmod.conf; nạp lại = reboot (nvidia.ko đang giữ card,
+# không gỡ nóng được). Userspace /opt/nvidia/dgpu-595.99.02 và gpu-mode dùng chung, không đổi.
+# Không tham số: in bản đang chọn + bản đang nạp.
+set -euo pipefail
+KVER=$(uname -r)
+W=${EGPU_DIR:-$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)/egpu}
+SRC=$W/open-gpu-kernel-modules-595.99.02-cmp90/kernel-open
+DST=/lib/modules/$KVER/updates/dgpu-cmp90
+CONF=/etc/nvidia-dgpu/depmod.conf
+
+sel() { grep -q 'updates/dgpu-cmp90' "$CONF" && echo cmp90 || echo stock; }
+loaded() {
+    [ -f /sys/module/nvidia/srcversion ] || { echo "chưa nạp"; return; }
+    local s; s=$(cat /sys/module/nvidia/srcversion)
+    if [ -f "$DST/nvidia.ko" ] && [ "$s" = "$(modinfo -F srcversion "$DST/nvidia.ko")" ]; then echo cmp90
+    elif [ "$s" = "$(modinfo -F srcversion "/lib/modules/$KVER/updates/dgpu/nvidia.ko")" ]; then echo stock
+    else echo "khác ($s)"; fi
+}
+case "${1:-}" in
+    "") echo "chọn: $(sel) · đang nạp: $(loaded)"; exit 0 ;;
+    stock|cmp90) ;;
+    *) echo "Dùng: cmp90-mode [stock|cmp90]" >&2; exit 2 ;;
+esac
+[ "$(id -u)" = 0 ] || exec sudo "$0" "$@"
+
+if [ "$1" = cmp90 ]; then
+    for m in nvidia nvidia-modeset nvidia-drm nvidia-uvm; do
+        [ -f "$SRC/$m.ko" ] || { echo "Thiếu $SRC/$m.ko — build chưa xong?"; exit 1; }
+    done
+    install -d "$DST"
+    install -m644 "$SRC"/*.ko "$DST"/
+    sed -i 's|updates/dgpu$|updates/dgpu-cmp90|' "$CONF"
+else
+    sed -i 's|updates/dgpu-cmp90$|updates/dgpu|' "$CONF"
+fi
+# Chép conf + depmod ngay như nv-load-display-modules.sh; xoá stamp để lúc boot nó làm lại cho chắc.
+rm -f /var/lib/nvidia/nv-display.stamp
+cp "$CONF" /etc/depmod.d/nvidia-display.conf
+depmod -a "$KVER"
+echo "== override:"; grep '^override' "$CONF"
+echo "== nvidia sẽ nạp từ: $(modinfo -n nvidia)"
+echo "Chọn: $(sel). Reboot để nạp. Kiểm sau boot: journalctl -k -b | grep -E 'CMP90|NVRM' ; dgpu nvidia-smi"
